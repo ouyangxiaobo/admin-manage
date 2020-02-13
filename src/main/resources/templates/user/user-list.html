@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="x-admin-sm" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>学生列表</title>
+        <header th:replace="header.html"></header>
+    </head>
+    <body>
+
+    <div class="x-nav">
+          <span class="layui-breadcrumb">
+            <a href="">首页</a>
+            <a href="">用户管理</a>
+            <a>
+                <cite>用户列表</cite></a>
+          </span>
+        <a class="layui-btn layui-btn-small" style="line-height:1.6em;margin-top:3px;float:right" href="javascript:location.replace(location.href);" title="刷新">
+            <i class="layui-icon" style="line-height:30px">ဂ</i></a>
+    </div>
+
+    <div class="layui-fluid">
+        <div class="layui-row  layui-col-space15">
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-body ">
+                        <form class="layui-form  layui-col-space5">
+                            <div class="layui-inline layui-show-xs-block">
+
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">用户名</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="username"  autocomplete="off" class="layui-input">
+                                    </div>
+                                </div>
+
+
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">手机</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="telephone"  autocomplete="off" class="layui-input">
+                                    </div>
+                                </div>
+
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">昵称</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="nickname"  autocomplete="off" class="layui-input">
+                                    </div>
+                                </div>
+
+
+                            <div class="layui-inline layui-show-xs-block">
+                                <button class="layui-btn"  lay-submit="" lay-filter="search"><i class="layui-icon">&#xe615;</i></button>
+                            </div>
+
+                            </div>
+                        </form>
+
+                    </div>
+
+
+                    <button class="layui-btn layui-btn-danger" onclick="delAll()" permission="sys:user:del" ><i class="layui-icon"></i>批量删除</button>
+                    <button class="layui-btn layui-btn-warm"   onclick="xadmin.open('添加用户','/user/add')"  permission="sys:user:add" ><i class="layui-icon"></i>添加</button>
+                </div>
+
+                <div class="layui-card-body ">
+                    <table class="layui-hide" id="table" lay-filter="member"></table>
+                </div>
+
+                <div class="layui-card-body ">
+                    <script type="text/html" id="barDemo">
+                        <a class="layui-btn layui-btn-xs" lay-event="edit" permission="sys:user:edit">编辑</a>
+                        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" permission="sys:user:del">删除</a>
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+    <script>
+        layui.use(['table','form','layer'], function(){
+            $ = layui.jquery;
+            var table = layui.table,
+                form = layui.form,
+                layer = layui.layer;
+
+
+
+
+            //第一个实例
+            table.render({
+                elem: '#table'
+                ,height: 520
+                ,method: 'post'
+                ,toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+                ,url: '/user/findUsersPage' //数据接口
+                ,response:{
+                    dataName:'datas'
+                }
+                ,page: true
+
+                ,cols: [
+                    [ //表头
+                     {type:  'checkbox',fixed: 'left',width: '80'}
+                    ,{field: 'id', title: 'ID', width:80, sort: true, fixed: 'left'}
+                    ,{field: 'username', title: '用户名', width:80}
+                    ,{field: 'nickname', title: '昵称', width:80}
+                    ,{field: 'headimgurl', title: '头像', width: 110}
+                    ,{field: 'phone', title: '电话', width: 80, sort: true}
+                    ,{field: 'telephone', title: '手机', width: 130, sort: true}
+                    ,{field: 'email', title: '邮箱', width: 135}
+                    ,{field: 'birthday', title: '生日', width: 150, sort: true}
+                    ,{field: 'sex', title: '性别', templet:function(d){
+                            return  d.sex == '1' ? "男":"女";
+                        },width: '80' ,sort: true}
+                    ,{field: 'status', title: '状态', templet:function(s){
+                            return  s.status == '1' ? "启用":"禁用";
+                        } , width: '80',sort: true}
+                    ,{field: 'createtime', title: '创建时间', width: 150}
+                    ,{field: 'updatetime', title: '更新时间', width: 150, sort: true}
+                    ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+
+
+                   ]
+                ],
+                done:function(){
+                    checkPermission()
+                }
+
+            });
+
+
+
+
+            //监听工具条
+            table.on('tool(member)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'del'){
+                    layer.confirm('确定删除改用户吗？', function(index){
+
+                        $.ajax({
+                            url:"/user/delUser",
+                            type:"POST",
+                            data:{userId:data.id},
+                            dataType:'json',
+                            success:function(data){
+                                layer.alert("删除成功", {icon: 1},function (index1) {
+                                    layer.close(index1);
+                                    //xadmin.father_reload();
+                                    table.reload('table');
+                                });
+                            }
+                        });
+
+                    });
+                } else if(obj.event === 'edit'){
+                    xadmin.open('编辑用户信息','/user/edit/?id='+data.id);
+                }
+            });
+
+
+
+            //搜索
+            form.on('submit(search)', function(data){
+                var username = data.field.username;
+                    var telephone=data.field.telephone;
+                    var nickname=data.field.nickname;
+
+                table.render({
+                    elem: '#table'
+                    ,method:'POST'
+                    ,url: '/user/findUsersPageSearch' //数据接口
+                    ,page: true //开启分页
+                    ,where:{
+                        "username":username,
+                        "telephone":telephone,
+                        "nickname":nickname
+                    }
+                    ,response: {
+                        countName: 'count', //规定数据总数的字段名称，默认：count
+                        dataName: 'datas' //规定数据列表的字段名称，默认：data
+                    }
+                    ,cols: [
+                        [ //表头
+                            {type:  'checkbox',fixed: 'left',width: '80'}
+                            ,{field: 'id', title: 'ID', width:80, sort: true, fixed: 'left'}
+                            ,{field: 'username', title: '用户名', width:80}
+                            ,{field: 'nickname', title: '昵称', width:80}
+                            ,{field: 'headimgurl', title: '头像', width: 110}
+                            ,{field: 'phone', title: '电话', width: 80, sort: true}
+                            ,{field: 'telephone', title: '手机', width: 130, sort: true}
+                            ,{field: 'email', title: '邮箱', width: 135}
+                            ,{field: 'birthday', title: '生日', width: 150, sort: true}
+                            ,{field: 'sex', title: '性别', templet:function(d){
+                                return  d.sex == '1' ? "男":"女";
+                            },width: '80' ,sort: true}
+                            ,{field: 'status', title: '状态', templet:function(s){
+                                return  s.status == '1' ? "启用":"禁用";
+                            } , width: '80',sort: true}
+                            ,{field: 'createtime', title: '创建时间', width: 150}
+                            ,{field: 'updatetime', title: '更新时间', width: 150, sort: true}
+                            ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+
+
+                        ]
+                    ]
+                });
+                return false;
+            });
+            checkPermission();
+
+        });
+    </script>
+
+</html>
